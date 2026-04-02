@@ -1,16 +1,53 @@
-# React + Vite
+# Uñas Elegantes
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Panel en React + Vite que funciona en dos modos:
 
-Currently, two official plugins are available:
+- Supabase, cuando defines credenciales válidas en el entorno.
+- Local, usando `localStorage`, cuando no hay configuración de Supabase.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Arranque
 
-## React Compiler
+1. Ejecuta `npm install` si no tienes dependencias instaladas.
+2. Ejecuta `npm run dev`.
+3. Si no defines credenciales de Supabase, la app entra en modo local automáticamente.
+4. En modo local puedes entrar con el botón `Entrar con datos semilla`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Consola
 
-## Expanding the ESLint configuration
+Si prefieres trabajar desde terminal con Supabase CLI:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Ejecuta `supabase login`.
+2. Si el proyecto está enlazado, aplica el esquema con `npm run supabase:push`.
+3. Para levantar una copia local con seeds, usa `npm run supabase:reset`.
+4. Los seeds se cargan desde [supabase/seed.sql](supabase/seed.sql).
+
+## Variables de entorno
+
+Necesitas estas variables para Supabase:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Si no las defines, el proyecto entra automáticamente en modo local.
+
+Acceso demo local:
+
+- Email: `demo@uaseslegantes.local`
+- Password: `demo1234`
+
+## Supabase
+
+El frontend espera estas tablas:
+
+- `clients`
+- `services`
+- `appointments`
+
+La app ya soporta datos locales con el mismo formato básico para pruebas y desarrollo sin backend.
+
+## Semillas
+
+- Los datos locales iniciales viven en [src/data/seedData.js](src/data/seedData.js).
+- Si quieres cargar Supabase desde cero, usa [supabase/seed.sql](supabase/seed.sql).
+- Si quieres crear también las tablas y políticas, usa [supabase/schema.sql](supabase/schema.sql).
+- Para Supabase CLI, la migración principal está en [supabase/migrations/20260401000000_init.sql](supabase/migrations/20260401000000_init.sql).

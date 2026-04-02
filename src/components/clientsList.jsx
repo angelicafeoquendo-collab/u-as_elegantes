@@ -5,7 +5,8 @@ export default function ClientsList() {
 
   const [clients, setClients] = useState([])
 
-  const fetchClients = async () => {
+  const handleDelete = async (id) => {
+    await deleteClient(id)
     const { data, error } = await getClients()
 
     if (!error) {
@@ -13,13 +14,16 @@ export default function ClientsList() {
     }
   }
 
-  const handleDelete = async (id) => {
-    await deleteClient(id)
-    fetchClients()
-  }
-
   useEffect(() => {
-    fetchClients()
+    const loadClients = async () => {
+      const { data, error } = await getClients()
+
+      if (!error) {
+        setClients(data)
+      }
+    }
+
+    void loadClients()
   }, [])
 
   return (

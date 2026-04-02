@@ -7,12 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "supabase:reset": "supabase db reset",
+    "supabase:push": "supabase db push"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/vite": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.2",
     "tailwindcss": "^4.2.0"
   },
   "devDependencies": {

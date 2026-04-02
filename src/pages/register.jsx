@@ -1,8 +1,10 @@
 import { useState } from "react"
-import { supabase } from "../lib/supabaseClient"
+import { Link, useNavigate } from "react-router-dom"
+import { isRemoteAuth, signUp } from "../services/authService"
 
 export default function Register() {
 
+  const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [mensaje, setMensaje] = useState("")
@@ -16,69 +18,63 @@ export default function Register() {
     setErrorMensaje("")
     setMensaje("")
 
-    const { error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    })
+    const { error } = await signUp({ email, password })
 
     if (error) {
       setErrorMensaje(error.message)
     } else {
-      setMensaje("Usuario registrado correctamente")
+      if (isRemoteAuth) {
+        setMensaje("Registro enviado. Revisa tu correo si Supabase requiere confirmación.")
+      } else {
+        setMensaje("Usuario registrado correctamente")
+        navigate("/dashboard")
+      }
     }
 
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pink-100">
+    <div className="auth-shell">
+      <form onSubmit={handleRegister} className="auth-card">
+        <p className="auth-badge">
+          {isRemoteAuth ? "Modo Supabase" : "Modo local"}
+        </p>
 
-      <form
-        onSubmit={handleRegister}
-        className="bg-white p-6 rounded shadow-md w-80"
-      >
+        <h1 className="auth-title">Crear Cuenta</h1>
+        <p className="auth-copy">Registra un acceso para comenzar a usar el panel.</p>
 
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 text-center">
-          Crear Cuenta 💅
-        </h2>
+        {errorMensaje && <p className="auth-error">{errorMensaje}</p>}
+        {mensaje && <p className="auth-success">{mensaje}</p>}
 
-        {errorMensaje && (
-          <p className="text-red-500 text-sm mb-2">
-            {errorMensaje}
-          </p>
-        )}
+        <label className="auth-field">
+          <span>Correo</span>
+          <input
+            type="email"
+            placeholder="correo@ejemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
 
-        {mensaje && (
-          <p className="text-green-600 text-sm mb-2">
-            {mensaje}
-          </p>
-        )}
+        <label className="auth-field">
+          <span>Contraseña</span>
+          <input
+            type="password"
+            placeholder="Crea una contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
 
-        <input
-          type="email"
-          placeholder="Correo"
-          className="w-full mb-3 p-2 border rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Contraseña"
-          className="w-full mb-3 p-2 border rounded"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button
-          className="w-full bg-pink-600 text-white p-2 rounded"
-          disabled={loading}
-        >
+        <button className="auth-button" disabled={loading}>
           {loading ? "Creando cuenta..." : "Registrarse"}
         </button>
 
+        <p className="auth-footer">
+          ¿Ya tienes cuenta? <Link to="/">Ingresar</Link>
+        </p>
       </form>
-
     </div>
   )
 }

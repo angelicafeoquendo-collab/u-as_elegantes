@@ -1,133 +1,403 @@
 import { useEffect, useState } from "react"
-import { supabase } from "../lib/supabaseClient"
+import { useNavigate } from "react-router-dom"
+import { isSupabaseConfigured, supabase } from "../lib/supabaseClient"
+import { localDatabase } from "../lib/localDatabase"
 import { getClients, createClient, deleteClient } from "../services/clientService"
+import { getServices, createService, deleteService } from "../services/serviceService"
+import { getAppointments, createAppointment, deleteAppointment } from "../services/appointmentService"
+import { getCurrentUser, signOut } from "../services/authService"
 
 export default function Dashboard() {
 
+  const navigate = useNavigate()
+  const [activeSection, setActiveSection] = useState("clients")
   const [clients, setClients] = useState([])
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
+  const [services, setServices] = useState([])
+  const [appointments, setAppointments] = useState([])
+
+  const [clientName, setClientName] = useState("")
+  const [clientPhone, setClientPhone] = useState("")
+
+  const [serviceName, setServiceName] = useState("")
+  const [servicePrice, setServicePrice] = useState("")
+  const [serviceDuration, setServiceDuration] = useState("")
+
+  const [appointmentClientId, setAppointmentClientId] = useState("")
+  const [appointmentServiceId, setAppointmentServiceId] = useState("")
+  const [appointmentDateTime, setAppointmentDateTime] = useState("")
+
   const [errorMensaje, setErrorMensaje] = useState("")
+  const [successMensaje, setSuccessMensaje] = useState("")
   const [loading, setLoading] = useState(false)
+  const [authLabel, setAuthLabel] = useState("")
 
-  const fetchClients = async () => {
-    const { data, error } = await getClients()
+  const fetchAllData = async () => {
+    const [clientsResult, servicesResult, appointmentsResult] = await Promise.all([
+      getClients(),
+      getServices(),
+      getAppointments(),
+    ])
 
-    if (error) {
-      setErrorMensaje("Error cargando clientes")
-    } else {
-      setClients(data)
+    if (clientsResult.error || servicesResult.error || appointmentsResult.error) {
+      setErrorMensaje("Error cargando datos del panel")
+      return
     }
+
+    setClients(clientsResult.data || [])
+    setServices(servicesResult.data || [])
+    setAppointments(appointmentsResult.data || [])
   }
 
   useEffect(() => {
-    fetchClients()
+    let active = true
+
+    const initialize = async () => {
+      const { user } = await getCurrentUser()
+
+      if (!user) {
+        navigate("/")
+        return
+      }
+
+      if (active) {
+        setAuthLabel(user.email ?? "Usuario local")
+        await fetchAllData()
+      }
+    }
+
+    void initialize()
+
+    if (!isSupabaseConfigured || !supabase) {
+      return () => {
+        active = false
+      }
+    }
 
     const channel = supabase
-      .channel("clients")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "clients" },
-        () => fetchClients()
-      )
+      .channel("dashboard-data")
+      .on("postgres_changes", { event: "*", schema: "public", table: "clients" }, () => fetchAllData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "services" }, () => fetchAllData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => fetchAllData())
       .subscribe()
 
     return () => {
+      active = false
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [navigate])
 
-  const handleCreate = async () => {
-
-    if (!name || !phone) {
+  const handleCreateClient = async () => {
+    if (!clientName || !clientPhone) {
       setErrorMensaje("Debes llenar nombre y teléfono")
       return
     }
 
     setLoading(true)
     setErrorMensaje("")
+    setSuccessMensaje("")
 
-    const user = (await supabase.auth.getUser()).data.user
+    const { user } = await getCurrentUser()
 
     const { error } = await createClient({
-      name,
-      phone,
-      user_id: user.id
+      name: clientName,
+      phone: clientPhone,
+      user_id: user?.id ?? "local-user"
     })
 
     if (error) {
       setErrorMensaje("Error creando cliente")
+    } else {
+      setSuccessMensaje("Cliente guardado correctamente")
+      setClientName("")
+      setClientPhone("")
+      await fetchAllData()
     }
 
-    setName("")
-    setPhone("")
     setLoading(false)
   }
 
-  const handleDelete = async (id) => {
+  const handleDeleteClient = async (id) => {
     const { error } = await deleteClient(id)
 
     if (error) {
       setErrorMensaje("No se pudo eliminar el cliente")
+    } else {
+      setSuccessMensaje("Cliente eliminado")
+      await fetchAllData()
     }
   }
 
-  return (
-    <div className="p-6 bg-pink-50 min-h-screen">
+  const handleCreateService = async () => {
+    if (!serviceName || !servicePrice || !serviceDuration) {
+      setErrorMensaje("Completa nombre, precio y duración del servicio")
+      return
+    }
 
-      <h1 className="text-3xl font-bold text-pink-700 mb-6">
-        Gestión de Clientes 💅
-      </h1>
+    setErrorMensaje("")
+    setSuccessMensaje("")
+
+    const { error } = await createService({
+      name: serviceName,
+      price: Number(servicePrice),
+      duration: Number(serviceDuration),
+    })
+
+    if (error) {
+      setErrorMensaje("Error creando servicio")
+      return
+    }
+
+    setServiceName("")
+    setServicePrice("")
+    setServiceDuration("")
+    setSuccessMensaje("Servicio guardado correctamente")
+    await fetchAllData()
+  }
+
+  const handleDeleteService = async (id) => {
+    const { error } = await deleteService(id)
+
+    if (error) {
+      setErrorMensaje("No se pudo eliminar el servicio")
+      return
+    }
+
+    setSuccessMensaje("Servicio eliminado")
+    await fetchAllData()
+  }
+
+  const handleCreateAppointment = async () => {
+    if (!appointmentClientId || !appointmentServiceId || !appointmentDateTime) {
+      setErrorMensaje("Completa cliente, servicio y fecha de la cita")
+      return
+    }
+
+    const { user } = await getCurrentUser()
+    const { error } = await createAppointment({
+      client_id: appointmentClientId,
+      service_id: appointmentServiceId,
+      date_time: appointmentDateTime,
+      status: "scheduled",
+      user_id: user?.id ?? "local-user",
+    })
+
+    if (error) {
+      setErrorMensaje("No se pudo crear la cita")
+      return
+    }
+
+    setErrorMensaje("")
+    setSuccessMensaje("Cita guardada correctamente")
+    setAppointmentClientId("")
+    setAppointmentServiceId("")
+    setAppointmentDateTime("")
+    await fetchAllData()
+  }
+
+  const handleDeleteAppointment = async (id) => {
+    const { error } = await deleteAppointment(id)
+
+    if (error) {
+      setErrorMensaje("No se pudo eliminar la cita")
+      return
+    }
+
+    setSuccessMensaje("Cita eliminada")
+    await fetchAllData()
+  }
+
+  const handleResetSeeds = async () => {
+    localDatabase.resetAll()
+    setErrorMensaje("")
+    setSuccessMensaje("Datos semilla restaurados")
+    await fetchAllData()
+  }
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate("/")
+  }
+
+  return (
+    <div className="dashboard-shell">
+
+      <div className="dashboard-header">
+        <div>
+          <p className="dashboard-kicker">{isSupabaseConfigured ? "Supabase activo" : "Modo local activo"}</p>
+          <h1 className="dashboard-title">Gestión del Spa</h1>
+          <p className="dashboard-subtitle">Sesión: {authLabel || "cargando..."}</p>
+        </div>
+
+        <button onClick={handleSignOut} className="auth-button auth-button-secondary">
+          Salir
+        </button>
+      </div>
 
       {errorMensaje && (
-        <p className="text-red-500 mb-4">
+        <p className="auth-error">
           {errorMensaje}
         </p>
       )}
 
-      <div className="mb-6">
+      {successMensaje && (
+        <p className="auth-success">
+          {successMensaje}
+        </p>
+      )}
 
-        <input
-          placeholder="Nombre del cliente"
-          className="border p-2 mr-2"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <input
-          placeholder="Teléfono"
-          className="border p-2 mr-2"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-
-        <button
-          onClick={handleCreate}
-          className="bg-pink-600 text-white px-4 py-2 rounded"
-          disabled={loading}
-        >
-          {loading ? "Guardando..." : "Agregar Cliente"}
-        </button>
-
+      <div className="dashboard-tabs">
+        <button className={`dashboard-tab ${activeSection === "clients" ? "is-active" : ""}`} onClick={() => setActiveSection("clients")}>Clientes</button>
+        <button className={`dashboard-tab ${activeSection === "services" ? "is-active" : ""}`} onClick={() => setActiveSection("services")}>Servicios</button>
+        <button className={`dashboard-tab ${activeSection === "appointments" ? "is-active" : ""}`} onClick={() => setActiveSection("appointments")}>Citas</button>
       </div>
 
-      <ul>
-        {clients?.map((client) => (
-          <li
-            key={client.id}
-            className="bg-white p-3 mb-2 shadow rounded flex justify-between"
-          >
-            {client.name} - {client.phone}
+      {!isSupabaseConfigured && (
+        <div className="dashboard-tools">
+          <button onClick={handleResetSeeds} className="dashboard-reset">
+            Restaurar datos semilla
+          </button>
+        </div>
+      )}
+
+      {activeSection === "clients" && (
+        <>
+          <div className="dashboard-form">
+            <input
+              placeholder="Nombre del cliente"
+              className="dashboard-input"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+            />
+
+            <input
+              placeholder="Teléfono"
+              className="dashboard-input"
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+            />
 
             <button
-              onClick={() => handleDelete(client.id)}
-              className="text-red-500"
+              onClick={handleCreateClient}
+              className="auth-button"
+              disabled={loading}
             >
-              Eliminar
+              {loading ? "Guardando..." : "Agregar Cliente"}
             </button>
-          </li>
-        ))}
-      </ul>
+          </div>
+
+          <ul className="dashboard-list">
+            {clients?.map((client) => (
+              <li
+                key={client.id}
+                className="dashboard-list-item"
+              >
+                <span>
+                  {client.name} - {client.phone}
+                </span>
+
+                <button
+                  onClick={() => handleDeleteClient(client.id)}
+                  className="dashboard-delete"
+                >
+                  Eliminar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {activeSection === "services" && (
+        <>
+          <div className="dashboard-form">
+            <input
+              placeholder="Nombre del servicio"
+              className="dashboard-input"
+              value={serviceName}
+              onChange={(e) => setServiceName(e.target.value)}
+            />
+
+            <input
+              placeholder="Precio"
+              type="number"
+              className="dashboard-input"
+              value={servicePrice}
+              onChange={(e) => setServicePrice(e.target.value)}
+            />
+
+            <input
+              placeholder="Duración (min)"
+              type="number"
+              className="dashboard-input"
+              value={serviceDuration}
+              onChange={(e) => setServiceDuration(e.target.value)}
+            />
+
+            <button onClick={handleCreateService} className="auth-button">
+              Agregar Servicio
+            </button>
+          </div>
+
+          <ul className="dashboard-list">
+            {services?.map((service) => (
+              <li key={service.id} className="dashboard-list-item">
+                <span>{service.name} - ${service.price} - {service.duration} min</span>
+                <button onClick={() => handleDeleteService(service.id)} className="dashboard-delete">Eliminar</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {activeSection === "appointments" && (
+        <>
+          <div className="dashboard-form dashboard-form-appointments">
+            <select
+              value={appointmentClientId}
+              className="dashboard-input"
+              onChange={(e) => setAppointmentClientId(e.target.value)}
+            >
+              <option value="">Seleccionar cliente</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>{client.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={appointmentServiceId}
+              className="dashboard-input"
+              onChange={(e) => setAppointmentServiceId(e.target.value)}
+            >
+              <option value="">Seleccionar servicio</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>{service.name}</option>
+              ))}
+            </select>
+
+            <input
+              type="datetime-local"
+              className="dashboard-input"
+              value={appointmentDateTime}
+              onChange={(e) => setAppointmentDateTime(e.target.value)}
+            />
+
+            <button onClick={handleCreateAppointment} className="auth-button">
+              Crear Cita
+            </button>
+          </div>
+
+          <ul className="dashboard-list">
+            {appointments?.map((appointment) => (
+              <li key={appointment.id} className="dashboard-list-item">
+                <span>
+                  {appointment.clients?.name || "Cliente"} - {appointment.services?.name || "Servicio"} - {appointment.date_time}
+                </span>
+                <button onClick={() => handleDeleteAppointment(appointment.id)} className="dashboard-delete">Eliminar</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
     </div>
   )

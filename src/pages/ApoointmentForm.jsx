@@ -11,16 +11,16 @@ export default function AppointmentForm() {
   const [clients, setClients] = useState([])
   const [services, setServices] = useState([])
 
-  const loadData = async () => {
-    const { data: clientsData } = await getClients()
-    const { data: servicesData } = await getServices()
-
-    setClients(clientsData || [])
-    setServices(servicesData || [])
-  }
-
   useEffect(() => {
-    loadData()
+    const loadData = async () => {
+      const { data: clientsData } = await getClients()
+      const { data: servicesData } = await getServices()
+
+      setClients(clientsData || [])
+      setServices(servicesData || [])
+    }
+
+    void loadData()
   }, [])
 
   const handleSubmit = async (e) => {

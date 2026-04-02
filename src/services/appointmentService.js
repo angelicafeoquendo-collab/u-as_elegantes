@@ -1,0 +1,1 @@
+export { getAppointments, createAppointment, updateAppointmentStatus, deleteAppointment } from "./appointmentServise.js"

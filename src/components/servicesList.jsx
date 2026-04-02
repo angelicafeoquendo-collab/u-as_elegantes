@@ -5,7 +5,8 @@ export default function ServicesList() {
 
   const [services, setServices] = useState([])
 
-  const fetchServices = async () => {
+  const handleDelete = async (id) => {
+    await deleteService(id)
     const { data, error } = await getServices()
 
     if (!error) {
@@ -13,13 +14,16 @@ export default function ServicesList() {
     }
   }
 
-  const handleDelete = async (id) => {
-    await deleteService(id)
-    fetchServices()
-  }
-
   useEffect(() => {
-    fetchServices()
+    const loadServices = async () => {
+      const { data, error } = await getServices()
+
+      if (!error) {
+        setServices(data)
+      }
+    }
+
+    void loadServices()
   }, [])
 
   return (

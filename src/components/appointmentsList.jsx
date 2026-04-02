@@ -5,7 +5,8 @@ export default function AppointmentsList() {
 
   const [appointments, setAppointments] = useState([])
 
-  const fetchAppointments = async () => {
+  const handleDelete = async (id) => {
+    await deleteAppointment(id)
     const { data, error } = await getAppointments()
 
     if (!error) {
@@ -13,13 +14,16 @@ export default function AppointmentsList() {
     }
   }
 
-  const handleDelete = async (id) => {
-    await deleteAppointment(id)
-    fetchAppointments()
-  }
-
   useEffect(() => {
-    fetchAppointments()
+    const loadAppointments = async () => {
+      const { data, error } = await getAppointments()
+
+      if (!error) {
+        setAppointments(data)
+      }
+    }
+
+    void loadAppointments()
   }, [])
 
   return (
