@@ -1,8 +1,14 @@
+import { apiRequest } from "../lib/apiClient"
+import { isApiConfigured } from "../lib/runtimeConfig"
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient"
 import { localDatabase } from "../lib/localDatabase"
 
 // Obtener todos los clientes
 export const getClients = async () => {
+  if (isApiConfigured) {
+    return await apiRequest("/clients")
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("clients")
@@ -15,6 +21,13 @@ export const getClients = async () => {
 
 // Crear un cliente
 export const createClient = async (client) => {
+  if (isApiConfigured) {
+    return await apiRequest("/clients", {
+      method: "POST",
+      body: client,
+    })
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("clients")
@@ -27,6 +40,13 @@ export const createClient = async (client) => {
 
 // Actualizar un cliente
 export const updateClient = async (id, client) => {
+  if (isApiConfigured) {
+    return await apiRequest(`/clients/${id}`, {
+      method: "PUT",
+      body: client,
+    })
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("clients")
@@ -40,6 +60,12 @@ export const updateClient = async (id, client) => {
 
 // Eliminar un cliente
 export const deleteClient = async (id) => {
+  if (isApiConfigured) {
+    return await apiRequest(`/clients/${id}`, {
+      method: "DELETE",
+    })
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("clients")

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { isApiConfigured, runtimeModeLabel } from "../lib/runtimeConfig"
 import { signIn, signInDemo, isRemoteAuth } from "../services/authService"
 
 export default function Login() {
@@ -40,7 +41,7 @@ export default function Login() {
     <div className="auth-shell">
       <form onSubmit={handleLogin} className="auth-card">
         <p className="auth-badge">
-          {isRemoteAuth ? "Modo Supabase" : "Modo local"}
+          {isApiConfigured ? runtimeModeLabel : isRemoteAuth ? "Modo Supabase" : "Modo local"}
         </p>
 
         <h1 className="auth-title">Spa de Uñas Elegantes</h1>
@@ -85,5 +86,3 @@ export default function Login() {
     </div>
   )
 }
-
-

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { isApiConfigured, runtimeModeLabel } from "../lib/runtimeConfig"
 import { isRemoteAuth, signUp } from "../services/authService"
 
 export default function Register() {
@@ -38,7 +39,7 @@ export default function Register() {
     <div className="auth-shell">
       <form onSubmit={handleRegister} className="auth-card">
         <p className="auth-badge">
-          {isRemoteAuth ? "Modo Supabase" : "Modo local"}
+          {isApiConfigured ? runtimeModeLabel : isRemoteAuth ? "Modo Supabase" : "Modo local"}
         </p>
 
         <h1 className="auth-title">Crear Cuenta</h1>

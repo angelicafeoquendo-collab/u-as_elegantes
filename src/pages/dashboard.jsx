@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { isApiConfigured, runtimeModeLabel } from "../lib/runtimeConfig"
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient"
 import { localDatabase } from "../lib/localDatabase"
 import { getClients, createClient, deleteClient } from "../services/clientService"
@@ -17,6 +18,7 @@ export default function Dashboard() {
 
   const [clientName, setClientName] = useState("")
   const [clientPhone, setClientPhone] = useState("")
+  const [clientEmail, setClientEmail] = useState("")
 
   const [serviceName, setServiceName] = useState("")
   const [servicePrice, setServicePrice] = useState("")
@@ -39,7 +41,13 @@ export default function Dashboard() {
     ])
 
     if (clientsResult.error || servicesResult.error || appointmentsResult.error) {
-      setErrorMensaje("Error cargando datos del panel")
+      const backendError =
+        clientsResult.error?.message ||
+        servicesResult.error?.message ||
+        appointmentsResult.error?.message ||
+        "Error cargando datos del panel"
+
+      setErrorMensaje(backendError)
       return
     }
 
@@ -96,12 +104,10 @@ export default function Dashboard() {
     setErrorMensaje("")
     setSuccessMensaje("")
 
-    const { user } = await getCurrentUser()
-
     const { error } = await createClient({
       name: clientName,
       phone: clientPhone,
-      user_id: user?.id ?? "local-user"
+      email: clientEmail || null,
     })
 
     if (error) {
@@ -110,6 +116,7 @@ export default function Dashboard() {
       setSuccessMensaje("Cliente guardado correctamente")
       setClientName("")
       setClientPhone("")
+      setClientEmail("")
       await fetchAllData()
     }
 
@@ -172,13 +179,11 @@ export default function Dashboard() {
       return
     }
 
-    const { user } = await getCurrentUser()
     const { error } = await createAppointment({
       client_id: appointmentClientId,
       service_id: appointmentServiceId,
       date_time: appointmentDateTime,
       status: "scheduled",
-      user_id: user?.id ?? "local-user",
     })
 
     if (error) {
@@ -223,7 +228,7 @@ export default function Dashboard() {
 
       <div className="dashboard-header">
         <div>
-          <p className="dashboard-kicker">{isSupabaseConfigured ? "Supabase activo" : "Modo local activo"}</p>
+          <p className="dashboard-kicker">{isApiConfigured ? `${runtimeModeLabel} activo` : isSupabaseConfigured ? "Supabase activo" : "Modo local activo"}</p>
           <h1 className="dashboard-title">Gestión del Spa</h1>
           <p className="dashboard-subtitle">Sesión: {authLabel || "cargando..."}</p>
         </div>
@@ -274,6 +279,13 @@ export default function Dashboard() {
               className="dashboard-input"
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
+            />
+
+            <input
+              placeholder="Correo electrónico"
+              className="dashboard-input"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
             />
 
             <button

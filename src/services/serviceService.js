@@ -1,8 +1,14 @@
+import { apiRequest } from "../lib/apiClient"
+import { isApiConfigured } from "../lib/runtimeConfig"
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient"
 import { localDatabase } from "../lib/localDatabase"
 
 // Obtener todos los servicios
 export const getServices = async () => {
+  if (isApiConfigured) {
+    return await apiRequest("/services")
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("services")
@@ -15,6 +21,13 @@ export const getServices = async () => {
 
 // Crear un servicio
 export const createService = async (service) => {
+  if (isApiConfigured) {
+    return await apiRequest("/services", {
+      method: "POST",
+      body: service,
+    })
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("services")
@@ -27,6 +40,13 @@ export const createService = async (service) => {
 
 // Actualizar servicio
 export const updateService = async (id, service) => {
+  if (isApiConfigured) {
+    return await apiRequest(`/services/${id}`, {
+      method: "PUT",
+      body: service,
+    })
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("services")
@@ -40,6 +60,12 @@ export const updateService = async (id, service) => {
 
 // Eliminar servicio
 export const deleteService = async (id) => {
+  if (isApiConfigured) {
+    return await apiRequest(`/services/${id}`, {
+      method: "DELETE",
+    })
+  }
+
   if (isSupabaseConfigured) {
     return await supabase
       .from("services")

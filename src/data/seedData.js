@@ -3,18 +3,21 @@ export const seedClients = [
     id: "1",
     name: "María López",
     phone: "555-0101",
+    email: "maria@example.com",
     created_at: "2026-04-01T08:00:00.000Z",
   },
   {
     id: "2",
     name: "Ana Torres",
     phone: "555-0102",
+    email: "ana@example.com",
     created_at: "2026-04-01T08:10:00.000Z",
   },
   {
     id: "3",
     name: "Valeria Díaz",
     phone: "555-0103",
+    email: "valeria@example.com",
     created_at: "2026-04-01T08:20:00.000Z",
   },
 ]

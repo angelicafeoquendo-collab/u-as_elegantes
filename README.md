@@ -2,6 +2,7 @@
 
 Panel en React + Vite que funciona en dos modos:
 
+- Servidor directo, usando una `DATABASE_URL` en un backend Node.
 - Supabase, cuando defines credenciales válidas en el entorno.
 - Local, usando `localStorage`, cuando no hay configuración de Supabase.
 
@@ -14,6 +15,13 @@ Panel en React + Vite que funciona en dos modos:
 
 ## Consola
 
+Si prefieres usar la conexión directa a Postgres:
+
+1. Define `DATABASE_POOLER_URL` si quieres usar el pooler, o `DATABASE_URL` para conexión directa. El pooler de Supabase para este proyecto puede usar `postgresql://postgres:[YOUR-PASSWORD]@db.crupvemnrcaptudircxp.supabase.co:6543/postgres`.
+2. Ejecuta `npm run api` para levantar el backend.
+3. Define `VITE_API_BASE_URL`, por ejemplo `http://localhost:3001/api`.
+4. Ejecuta `npm run dev` para levantar el frontend.
+
 Si prefieres trabajar desde terminal con Supabase CLI:
 
 1. Ejecuta `supabase login`.
@@ -25,10 +33,14 @@ Si prefieres trabajar desde terminal con Supabase CLI:
 
 Necesitas estas variables para Supabase:
 
+- `VITE_API_BASE_URL` para el modo servidor directo.
+- `DATABASE_URL` para el backend Node.
+- `DATABASE_POOLER_URL` para priorizar el pooler de Supabase.
+- `PORT` para cambiar el puerto del backend directo.
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_PUBLISHABLE_KEY` o, por compatibilidad, `VITE_SUPABASE_ANON_KEY`
 
-Si no las defines, el proyecto entra automáticamente en modo local.
+Si defines `VITE_API_BASE_URL`, el frontend usa el backend directo y no necesita la clave pública de Supabase para los datos. Si no las defines, el proyecto entra automáticamente en modo local. Supabase ha ido migrando la etiqueta pública hacia "publishable key"; en este proyecto ambas opciones funcionan.
 
 Acceso demo local:
 
@@ -44,6 +56,10 @@ El frontend espera estas tablas:
 - `appointments`
 
 La app ya soporta datos locales con el mismo formato básico para pruebas y desarrollo sin backend.
+
+## Backend directo
+
+El backend directo vive en [server/index.js](server/index.js) y expone rutas REST para `clients`, `services` y `appointments`. La conexión a la base de datos nunca se envía al navegador; solo la consume el servidor. Si están presentes ambas variables, el servidor prioriza `DATABASE_POOLER_URL`.
 
 ## Semillas
 

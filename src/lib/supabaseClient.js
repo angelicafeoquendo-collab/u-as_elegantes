@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
+import { isSupabaseConfigured, supabaseCredentials } from "./runtimeConfig"
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const { supabaseUrl, supabasePublishableKey } = supabaseCredentials
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export { isSupabaseConfigured }
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabasePublishableKey)
   : null
